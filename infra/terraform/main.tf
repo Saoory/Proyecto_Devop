@@ -16,6 +16,10 @@ data "aws_iam_role" "labrole" {
   name = "LabRole"
 }
 
+# =========================================================================
+# RED (VPC, Subnets, Internet Gateway, Route Tables)
+# =========================================================================
+
 # VPC para el clúster
 resource "aws_vpc" "eks_vpc" {
   cidr_block           = "10.0.0.0/16"
@@ -34,7 +38,7 @@ resource "aws_subnet" "eks_subnet_1" {
   availability_zone       = "us-east-1a"
   map_public_ip_on_launch = true
   tags = {
-    Name                      = "eks-subnet-1"
+    Name                     = "eks-subnet-1"
     "kubernetes.io/role/elb" = "1" # Indica a AWS dónde poner los Balanceadores de Carga externos
   }
 }
@@ -45,7 +49,7 @@ resource "aws_subnet" "eks_subnet_2" {
   availability_zone       = "us-east-1b"
   map_public_ip_on_launch = true
   tags = {
-    Name                      = "eks-subnet-2"
+    Name                     = "eks-subnet-2"
     "kubernetes.io/role/elb" = "1"
   }
 }
@@ -79,15 +83,66 @@ resource "aws_route_table_association" "rta_2" {
   route_table_id = aws_route_table.rt.id
 }
 
-# EKS: Elastic Kubernetes Service
+# =========================================================================
+# SECURITY GROUPS (Grupos de Seguridad)
+# =========================================================================
+
+resource "aws_security_group" "eks_cluster_sg" {
+  name        = "eks-cluster-security-group"
+  description = "Grupo de seguridad basico para el cluster EKS y comunicacion de nodos"
+  vpc_id      = aws_vpc.eks_vpc.id
+
+  # Regla de Entrada (Ingress): Permite tráfico en puertos comunes de apps (80, 443, 8080) desde internet
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Regla de Salida (Egress): Permite que el clúster y nodos salgan a internet (necesario para descargar imágenes de ECR/Docker Hub)
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1" # "-1" significa todos los protocolos
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "eks-cluster-sg"
+  }
+}
+
+# =========================================================================
+# EKS (Elastic Kubernetes Service)
+# =========================================================================
+
 resource "aws_eks_cluster" "eks" {
   name     = "despachos-ventas-cluster"
   role_arn = data.aws_iam_role.labrole.arn
+  
   vpc_config {
     subnet_ids = [
       aws_subnet.eks_subnet_1.id,
       aws_subnet.eks_subnet_2.id
     ]
+    # Se añade el grupo de seguridad personalizado al clúster
+    security_group_ids = [aws_security_group.eks_cluster_sg.id]
   }
 }
 
@@ -106,10 +161,13 @@ resource "aws_eks_node_group" "workers" {
   }
   instance_types = ["t3.medium"]
   capacity_type  = "ON_DEMAND"
+
+  # Los nodos heredarán la configuración de red y las reglas básicas del clúster automáticamente,
+  # pero si en el futuro necesitas añadir configuraciones de lanzamiento avanzadas, puedes asociar el SG aquí.
 }
 
 # =========================================================================
-# ECR
+# ECR (Elastic Container Registry)
 # =========================================================================
 
 # 1. Registro para el Microservicio de Despachos (Backend 1)
@@ -149,7 +207,7 @@ resource "aws_ecr_repository" "frontend_repo" {
 }
 
 # =========================================================================
-# OUTPUT
+# OUTPUTS
 # =========================================================================
 output "cluster_name" {
   value = aws_eks_cluster.eks.name
