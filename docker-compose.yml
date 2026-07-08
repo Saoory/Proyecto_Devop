@@ -16,7 +16,7 @@ services:
       retries: 5
 
   back-despachos:
-    build: ./back-Despachos_SpringBoot
+    build: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
     container_name: springboot-despachos
     ports:
       - "8080:8080"
@@ -29,7 +29,7 @@ services:
         condition: service_healthy
 
   back-ventas:
-    build: ./back-Ventas_SpringBoot
+    build: ./back-Ventas_SpringBoot/Springboot-API-REST
     container_name: springboot-ventas
     ports:
       - "8081:8081"
