@@ -1,50 +1,81 @@
-PARA INICIALIZAR
+# Proyecto DevOps: Microservicios con AWS, EKS y CI/CD
 
-Abrir docker (kubernete activado)
-cd infra/terraform
-export aws_access_key_id=
-export aws_secret_access_key=
-aws_session_token=
-export aws_default_region="us-east-1"
+Este repositorio contiene la arquitectura y el código para el despliegue automático de una aplicación de microservicios (Frontend, Backend Ventas y Backend Despachos) utilizando prácticas modernas de DevOps, Infraestructura como Código (IaC) y Despliegue Continuo (CD).
 
-terraform init
-(terraform plan)
-terraform apply
+---
 
-Github
-poner secrets
+## Desarrollo Local (Inicio Rápido)
 
-realizar commit para el despliegue del ci/cd
+Para levantar el entorno completo de desarrollo en tu máquina local utilizando Docker Compose, sigue estos pasos:
 
+### Prerrequisitos
+* Tener instalado Docker Desktop con soporte para contenedores Linux.
 
-## Inicio rápido
+### Pasos para iniciar
+1. **Clonar el repositorio y entrar al proyecto:**
+   ```bash
+   git clone <URL_DEL_REPOSITORIO>
+   cd Proyecto_Devop
+   ```
 
-1. Clonar el repositorio.
+2. **Ejecutar el entorno:**
+   Construye las imágenes locales y levanta todos los contenedores (Frontend, Backends y Base de Datos MySQL):
+   ```bash
+   docker compose up --build
+   ```
 
+3. **Acceder a la aplicación:**
+   Abre tu navegador web e ingresa a:
+   **http://localhost:3000**
+
+4. **Detener el proyecto:**
+   Para apagar los contenedores y liberar los puertos del sistema:
+   ```bash
+   docker compose down
+   ```
+
+---
+
+## Despliegue Automatizado en la Nube (GitHub Actions)
+
+Toda la infraestructura y la aplicación se despliegan de forma automática al realizar cambios en el repositorio.
+
+### Paso 1: Configurar las Credenciales en GitHub
+Antes de subir tu código, debes pasarle las llaves de AWS a GitHub Actions para que tenga permisos de construcción:
+1. Ve a tu repositorio en GitHub -> Settings -> Secrets and variables -> Actions.
+2. Registra los siguientes Repository Secrets con tus credenciales actualizadas de AWS Academy:
+   * `AWS_ACCESS_KEY_ID`
+   * `AWS_SECRET_ACCESS_KEY`
+   * `AWS_SESSION_TOKEN`
+   * `AWS_REGION` (us-east-1)
+
+### Paso 2: Gatillar el Pipeline
+Simplemente sube tus cambios a la rama principal:
 ```bash
-git clone <URL_DEL_REPOSITORIO>
+git add .
+git commit -m "deploy: infraestructura y aplicación"
+git push origin main
 ```
+> **¿Qué pasa internamente?** El pipeline `terraform.yml` creará la red (VPC) y el clúster (EKS). Inmediatamente después, el pipeline `cd.yml` empaquetará tus microservicios en Docker, los subirá a Amazon ECR y ejecutará un `kubectl apply` para encender todo en AWS sin intervención manual.
 
-2. Ingresar al proyecto.
+---
 
-```bash
-cd Proyecto_Devop
-```
+## Anexo: Despliegue Manual (Solo para pruebas o contingencias)
 
-3. Ejecutar Docker Compose.
+Si necesitas desplegar la infraestructura a mano desde tu terminal local sin usar los pipelines de GitHub:
 
-```bash
-docker compose up --build
-```
+1. Asegúrate de tener Docker Desktop corriendo con Kubernetes activado.
+2. Abre tu terminal, navega a la carpeta y exporta tus credenciales temporales:
+   ```bash
+   cd infra/terraform
 
-4. Abrir la aplicación.
-
-```
-http://localhost:3000
-```
-
-5. Para detener el proyecto.
-
-```bash
-docker compose down
-```
+   export AWS_ACCESS_KEY_ID="tu_access_key"
+   export AWS_SECRET_ACCESS_KEY="tu_secret_key"
+   export AWS_SESSION_TOKEN="tu_session_token"
+   export AWS_DEFAULT_REGION="us-east-1"
+   ```
+3. Ejecuta el aprovisionamiento manual:
+   ```bash
+   terraform init
+   terraform apply -auto-approve
+   ```
