@@ -14,7 +14,7 @@ Para levantar el entorno completo de desarrollo en tu máquina local utilizando 
 ### Pasos para iniciar
 1. **Clonar el repositorio y entrar al proyecto:**
    ```bash
-   git clone <URL_DEL_REPOSITORIO>
+   git clone https://github.com/Saoory/Proyecto_Devop.git
    cd Proyecto_Devop
    ```
 
