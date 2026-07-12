@@ -1,0 +1,41 @@
+#borrar si se hara el terraform manual
+
+
+name: 1. Crear Infraestructura (Terraform)
+
+on:
+  workflow_dispatch: # botón manual en GitHub
+
+jobs:
+  crear-infraestructura:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1
+      TF_DIR: ./infra/terraform 
+      
+    steps:
+      - name: Descargar el código (Checkout)
+        uses: actions/checkout@v4
+      
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+          aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+          aws-session-token: ${{secrets.AWS_SESSION_TOKEN}}
+          aws-region: ${{env.AWS_REGION}}
+          
+      - name: Instalar Terraform
+        uses: hashicorp/setup-terraform@v3
+        
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ${{env.TF_DIR}}
+        
+      - name: Terraform Plan
+        run: terraform plan
+        working-directory: ${{env.TF_DIR}}
+        
+      - name: Terraform Apply (Crear todo)
+        run: terraform apply -auto-approve
+        working-directory: ${{env.TF_DIR}}

@@ -1,8 +1,9 @@
 name: Despliegue en AWS con EKS
 on:
-  push:
-    branches:
-      - deploy
+  #push:
+    #branches:
+      #- deploy
+  workflow_dispatch: #sacar esto si no lo usaremos y quitar los # de arriba
 jobs:
   deploy:
     runs-on: ubuntu-latest
